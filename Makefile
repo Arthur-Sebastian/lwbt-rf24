@@ -8,13 +8,19 @@ SERIAL=/dev/ttyUSB0
 
 .DEFAULT_GOAL := build
 
-btle.o:
-	avr-gcc -mmcu=$(MCU) -c -o $(BUILDDIR)/btle.o btle.S
+btle.s.o:
+	avr-gcc -mmcu=$(MCU) -c -o $(BUILDDIR)/btle.s.o btle.S
+
+btle.c.o:
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/btle.c.o btle.c
+
+spi.o:
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/spi.o spi.c
 
 main.o:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/main.o main.c
 
-build: btle.o main.o
+build: btle.s.o btle.c.o spi.o main.o
 	$(CC) $(CFLAGS) -mmcu=$(MCU) -o $(BUILDDIR)/out.bin $(BUILDDIR)/*.o
 	avr-objcopy -j .data -j .text -O ihex $(BUILDDIR)/out.bin $(BUILDDIR)/program.hex
 	avr-size $(BUILDDIR)/program.hex

@@ -1,12 +1,20 @@
+/*
+ * LWBT-RF24
+ *
+ * nRF24L01 definitions
+ * (C) Artur Sebastian Miller 2023
+*/
+
+
 #ifndef RF24
 #define RF24
 
-/* constants */
+/* nRF24L01+ Preliminary Product Specification 8.3.1, 9.1 */
+
 #define RF_DELAY_START  5
 #define RF_DELAY_POWER  5
 #define RF_DELAY_SETTLE 130
 
-/* registers */
 #define RF_REG_CONFIG  0x00
 #define RF_REG_ENAA    0x01
 #define RF_REG_RXADDR  0x02
@@ -26,7 +34,6 @@
 #define RF_REG_TXADDR  0x10
 #define RF_REG_RXWP0   0x11
 
-/* commands */
 #define RF_CMD_RREG    0x00
 #define RF_CMD_WREG    0x20
 #define RF_CMD_READRX  0x61
@@ -35,9 +42,9 @@
 #define RF_CMD_FLUSHTX 0xE1
 #define RF_CMD_NOP     0xFF
 
-/* status bits */
 #define RF_STATUS_RXREADY 0x40
 #define RF_STATUS_TXREADY 0x20
 #define RF_STATUS_MAXRT   0x10
 #define RF_STATUS_ALL     0x70
+
 #endif

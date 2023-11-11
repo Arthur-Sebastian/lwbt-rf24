@@ -1,7 +1,14 @@
-#include <avr/io.h>
+; LWBT-RF24
+; data utility functions
+; (C) Artur Sebastian Miller 2023
+
 
 	.section .text
+
 	.global btle_crc
+	.global btle_whiten
+
+; Bluetooth Core 4.2, Vol 6, Part B, 3.1.1
 btle_crc:
 	movw		r30, r24
 	mov		r25, r22
@@ -16,17 +23,13 @@ btle_crc_l1:
 	ld		r18, Z+
 	ldi		r19, 0x01
 btle_crc_l2:
-	; perform multi-byte shift
 	lsr		r22
 	ror		r23
 	ror		r24
-	; extract carry
 	rol		r20
 	eor		r20, r18
-	; check lowest bit
 	lsr		r20
 	brcc		btle_crc_next
-	; toggle polynomial bits
 	eor		r22, r26
 	eor		r23, r27
 btle_crc_next:
@@ -34,7 +37,31 @@ btle_crc_next:
 	lsl		r19
 	brne		btle_crc_l2
 	dec		r25
-	breq		btle_crc_ret
-	rjmp		btle_crc_l1
-btle_crc_ret:
+	brne		btle_crc_l1
+	ret
+
+; Bluetooth Core 4.2, Vol 6, Part B, 3.2
+btle_whiten:
+	movw		r30, r24
+	; whitening polynomial
+	ldi		r21, 0x88
+	; 8 bit LFSR
+	ori		r20, 0x40
+btle_whiten_l1:
+	eor		r18, r18
+	ldi		r19, 0x01
+btle_whiten_l2:
+	sbrs		r20, 0
+	rjmp		btle_whiten_next
+	eor		r20, r21
+	or		r18, r19
+btle_whiten_next:
+	lsr		r20
+	lsl		r19
+	brne		btle_whiten_l2
+	ld		r24, Z
+	eor		r24, r18
+	st		Z+, r24
+	dec		r22
+	brne		btle_whiten_l1
 	ret
