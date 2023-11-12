@@ -74,10 +74,10 @@ static void rf_diag(void)
 
 	uart_print("> DIAG\n");
 	for (uint8_t i = 0; i < sizeof(regs); i++) {
-		spi_toggleSelect();
+		spi_setSelect();
 		spi_transfer(RF_CMD_RREG | regs[i]);
 		res = spi_transfer(RF_CMD_NOP);
-		spi_toggleSelect();
+		spi_clearSelect();
 		uart_bin(res);
 	}
 

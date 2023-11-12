@@ -38,18 +38,18 @@ static struct {
 
 static void btle_radioCommand(uint8_t cmd)
 {
-	spi_toggleSelect();
+	spi_setSelect();
 	spi_transfer(cmd);
-	spi_toggleSelect();
+	spi_clearSelect();
 }
 
 
 static void btle_radioSetReg(uint8_t reg, uint8_t value)
 {
-	spi_toggleSelect();
+	spi_setSelect();
 	spi_transfer(RF_CMD_WREG | reg);
 	spi_transfer(value);
-	spi_toggleSelect();
+	spi_clearSelect();
 }
 
 
@@ -64,15 +64,15 @@ static inline void btle_radioSetup()
 	// disable retransmissions
 	btle_radioSetReg(RF_REG_SETRETR, 0x00);
 	// set BTLE channel address
-	spi_toggleSelect();
+	spi_setSelect();
 	spi_transfer(RF_CMD_WREG | RF_REG_RXAP0);
-	spi_swapDataOrder();
+	spi_setLSBFirst();
 	spi_transfer(BTLE_ADV_ADDR0);
 	spi_transfer(BTLE_ADV_ADDR1);
 	spi_transfer(BTLE_ADV_ADDR2);
 	spi_transfer(BTLE_ADV_ADDR3);
-	spi_swapDataOrder();
-	spi_toggleSelect();
+	spi_setMSBFirst();
+	spi_clearSelect();
 	// payload width
 	btle_radioSetReg(RF_REG_RXWP0, 32);
 	// RX on pipe 0
@@ -127,14 +127,14 @@ ISR(INT0_vect)
 {
 	cli();
 	btle_radioSetReg(RF_REG_STATUS, RF_STATUS_ALL);
-	spi_toggleSelect();
+	spi_setSelect();
 	spi_transfer(RF_CMD_READRX);
-	spi_swapDataOrder();
+	spi_setLSBFirst();
 	for (uint8_t i = 0; i < 32; i++) {
 		*(btle_driver.rx_buffer + i) = spi_transfer(RF_CMD_NOP);
 	}
-	spi_swapDataOrder();
-	spi_toggleSelect();
+	spi_setMSBFirst();
+	spi_clearSelect();
 	btle_driver.rx_in = 1;
 	sei();
 }

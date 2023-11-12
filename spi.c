@@ -7,7 +7,6 @@
 
 
 #include <avr/io.h>
-#include "config.h"
 #include "spi.h"
 
 void spi_init(void)
@@ -18,15 +17,6 @@ void spi_init(void)
 	SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
 }
 
-void spi_toggleSelect(void)
-{
-	SPI_PORT_SS ^= (1 << SPI_SS);
-}
-
-void spi_swapDataOrder(void)
-{
-	SPCR ^= (1 << DORD);
-}
 
 uint8_t spi_transfer(uint8_t data)
 {
