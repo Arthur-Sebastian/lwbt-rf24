@@ -112,7 +112,9 @@ void btle_init(uint8_t *buf)
 
 uint8_t btle_dataPending(void)
 {
-	return btle_driver.rx_in--;
+	uint8_t temp = btle_driver.rx_in;
+	btle_driver.rx_in = 0;
+	return temp;
 }
 
 
