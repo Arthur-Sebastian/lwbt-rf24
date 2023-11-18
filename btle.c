@@ -1,10 +1,9 @@
-/*
- * LWBT-RF24
- *
- * nRF24L01 BT 4.2 LE advertising stack driver
- * (C) Artur Sebastian Miller 2023
+/**
+@file btle.c
+@brief nRF24L01 BT 4.2 LE advertising stack driver.
+@author Artur Miller
+@copyright (C) Artur Miller 2023
 */
-
 
 #include "config.h"
 #include <avr/io.h>

@@ -1,10 +1,9 @@
-/*
- * LWBT-RF24
- *
- * nRF24L01 BT 4.2 LE advertising stack driver
- * (C) Artur Sebastian Miller 2023
+/**
+@file btle.h
+@brief nRF24L01 BT 4.2 LE advertising stack driver.
+@author Artur Miller
+@copyright (C) Artur Miller 2023
 */
-
 
 #ifndef BTLE
 #define BTLE
@@ -22,18 +21,60 @@
 #define BTLE_DATA_MANUFACTURER 0xFF
 
 
+/**
+@brief Initializes the BTLE driver.
+
+@param[out] buf Packet buffer address.
+@return Nothing.
+*/
 void btle_init(uint8_t *buf);
 
 
+/**
+@brief Enables the radio.
+
+@note This function should never be called before btle_hopChannel().
+@see btle_hopChannel()
+
+@return Nothing.
+*/
 void btle_radioEnable(void);
 
 
+/**
+@brief Checks for incoming data presence.
+
+@return 1 when data present, 0 otherwise.
+*/
 uint8_t btle_dataPending(void);
 
 
+/**
+@brief Disables the radio.
+
+@note This function should always be called before btle_hopChannel().
+@see btle_hopChannel()
+
+@return Nothing.
+*/
 void btle_radioDisable(void);
 
 
+/**
+@brief Hops to the next channel.
+
+Changes the active channel to the next advertising channel
+for listening or transmitting. This function should be called
+after every transmission or after listening on a channel for
+a given time.
+
+@note Calling this function when the radio is enabled might cause
+it to ignore the channel hop.
+@see btle_radioEnable
+@see btle_radioDisable
+
+@return Nothing.
+*/
 void btle_hopChannel(void);
 
 

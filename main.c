@@ -8,12 +8,15 @@
 #include "rf24def.h"
 #include "btle.h"
 
+
 #define BAUD 9600
 #define UBRR (F_CPU/16/BAUD-1)
 
 #define PIN_CE    (1 << 0)
 
+
 static uint8_t rx_buf[34];
+
 
 static void uart_print(char *data)
 {
@@ -57,7 +60,6 @@ static void setup(void)
 }
 
 
-
 static void rf_diag(void)
 {
 	uint8_t res = 0;
@@ -83,7 +85,6 @@ static void rf_diag(void)
 
 	uart_print("> END DIAG\n");
 }
-
 
 
 static uint8_t btle_checkpacket(uint8_t *data)

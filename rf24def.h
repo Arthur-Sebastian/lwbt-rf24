@@ -1,10 +1,9 @@
-/*
- * LWBT-RF24
- *
- * nRF24L01 definitions
- * (C) Artur Sebastian Miller 2023
+/**
+@file rf24def.h
+@brief nRF24L01 definition macros.
+@author Artur Miller
+@copyright (C) Artur Miller 2023
 */
-
 
 #ifndef RF24
 #define RF24

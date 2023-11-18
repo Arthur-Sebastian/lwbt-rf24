@@ -1,8 +1,8 @@
-/*
- * LWBT-RF24
- *
- * Minimal ATmegaX8 SPI driver
- * (C) Artur Sebastian Miller 2023
+/**
+@file spi.h
+@brief Minimal ATmegaX8 SPI driver.
+@author Artur Miller
+@copyright (C) Artur Miller 2023
 */
 
 #include "config.h"
