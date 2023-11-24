@@ -16,6 +16,12 @@
 
 
 static uint8_t rx_buf[34];
+static const char toHex[] = {
+	'0', '1', '2', '3',
+	'4', '5', '6', '7',
+	'8', '9', 'A', 'B',
+	'C', 'D', 'E', 'F'
+};
 
 
 static void uart_print(char *data)
@@ -39,6 +45,18 @@ static void uart_bin(uint8_t data)
 		data <<= 1;
 	}
 
+	uart_print(buf);
+}
+
+static void uart_hex(uint8_t data)
+{
+	uint8_t h_hex, l_hex;
+	l_hex = data & 0x0F;
+	h_hex = data >> 4;
+	char buf[3];
+	buf[0] = toHex[h_hex];
+	buf[1] = toHex[l_hex];
+	buf[2] = '\0';
 	uart_print(buf);
 }
 
@@ -100,12 +118,19 @@ static uint8_t btle_checkpacket(uint8_t *data)
 }
 
 
+void print_bytes(uint8_t* data, uint8_t length) {
+	for(uint8_t i = 0; i < length; i++) {
+		//uart_bin(*(data + i));
+		uart_hex(*(data + i));
+	}
+	uart_print("\n");
+}
+
 int main(void)
 {
 	uint8_t current = 0;
 	uint16_t header;
 	uint32_t crc;
-	uint8_t *crc_ptr = (uint8_t *) &crc;
 
 	setup();
 	btle_init((uint8_t *) rx_buf);
@@ -115,19 +140,29 @@ int main(void)
 		btle_radioEnable();
 		_delay_ms(20);
 		btle_radioDisable();
+
 		if (btle_dataPending() != 0) {
+
 			header = *((uint16_t *) rx_buf);
 			btle_whiten((uint8_t *) &header, 2, 37 + current);
+
 			if (btle_checkpacket((uint8_t *) &header) == 0) {
-				btle_whiten((uint8_t *) rx_buf, 32 , 37 + current);
-				crc = btle_crc((uint8_t *) rx_buf, 29);
-				uart_bin(*(crc_ptr));
-				uart_bin(*(crc_ptr + 1));
-				uart_bin(*(crc_ptr + 2));
-				uart_bin(*(crc_ptr + 3));
-				uart_print((char *) rx_buf);
+				uint8_t pdu_len = *((uint8_t *) &header + BTLE_PACKET_LENGTH);
+				btle_whiten((uint8_t *) rx_buf, pdu_len + 5 , 37 + current);
+				crc = btle_crc((uint8_t *) rx_buf, pdu_len + 2);
+
+				uart_print("\nDUMP:\n");
+				print_bytes(rx_buf, pdu_len + 5);
+				uart_print("HEAD:\n");
+				print_bytes(rx_buf, 2);
+				uart_print("PDU:\n");
+				print_bytes(rx_buf + BTLE_PACKET_MAC, pdu_len);
+				uart_print("CRC:\n");
+				print_bytes(rx_buf + BTLE_PACKET_MAC + pdu_len, 3);
+				print_bytes((uint8_t *) &crc, 3);
 			}
 		}
+
 		current = (current < 2) ? current + 1 : 0;
 		btle_hopChannel();
 	}
