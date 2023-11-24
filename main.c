@@ -110,7 +110,8 @@ static uint8_t btle_checkpacket(uint8_t *data)
 	if (*(data + BTLE_PACKET_HEADER) != BTLE_ADV_NONCONN_IND) {
 		return -1;
 	}
-	if (*(data + BTLE_PACKET_LENGTH) != 27) {
+	uint8_t pduLength = *(data + BTLE_PACKET_LENGTH);
+	if (pduLength > 27 || pduLength < 6) {
 		return -1;
 	}
 

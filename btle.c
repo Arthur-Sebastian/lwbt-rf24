@@ -87,11 +87,13 @@ static inline void btle_radioSetup()
 void btle_radioDisable(void)
 {
 	RADIO_PORT_CE &= ~(1 << RADIO_CE);
+	cli();
 }
 
 
 void btle_radioEnable(void)
 {
+	sei();
 	RADIO_PORT_CE |= (1 << RADIO_CE);
 	_delay_us(RF_DELAY_SETTLE);
 }
@@ -105,7 +107,6 @@ void btle_init(uint8_t *buf)
 	btle_radioSetup();
 	btle_radioCommand(RF_CMD_FLUSHRX);
 	btle_radioCommand(RF_CMD_FLUSHTX);
-	sei();
 }
 
 
