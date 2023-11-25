@@ -8,6 +8,8 @@
 #ifndef BTLE
 #define BTLE
 
+#include <stdint.h>
+
 /* Bluetooth Core 4.2, Vol 6, Part B, 2.3 */
 #define BTLE_ADV_IND         0x40
 #define BTLE_ADV_NONCONN_IND 0x42

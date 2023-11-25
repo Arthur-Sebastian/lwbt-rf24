@@ -6,6 +6,7 @@
 */
 
 #include "config.h"
+#include <stdint.h>
 
 
 void spi_init(void);
