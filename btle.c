@@ -9,6 +9,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <stdint.h>
+#include "btle.h"
 #include "spi.h"
 #include "rf24def.h"
 
@@ -19,51 +21,57 @@
 #define BTLE_ADV_ADDR2       0xBE
 #define BTLE_ADV_ADDR3       0xD6
 
+/* Bluetooth Core 4.2, Vol 6, Part B, 2.3 */
+#define BTLE_ADV_NONCONN_IND 0x42
+
+#define BTLE_PACKET_HEADER 0
+#define BTLE_PACKET_LENGTH 1
+
 
 /* Bluetooth Core 4.2, Vol 6, Part B, 1.4.1 */
 static const uint8_t ch_phy[] = {  2, 26, 80 };
-static const uint8_t ch_ind[] = { 37, 38, 39 };
 
 
-static struct {
-
-	uint8_t channel;
-	uint8_t *rx_buffer;
-	uint8_t rx_in;
-	uint8_t pdu_header[2];
-
-} btle_driver;
+/* implemented in btle.S */
+extern uint32_t btle_crc(uint8_t *data, uint8_t len);
+extern void btle_whiten(uint8_t *data, uint8_t len, uint8_t channel);
 
 
-static void btle_radioCommand(uint8_t cmd)
+static void btle_send_command(uint8_t cmd, btle_t *driver)
 {
-	spi_setSelect();
+	uint8_t spi_ss = driver -> spi_ss;
+
+	spi_select(spi_ss);
 	spi_transfer(cmd);
-	spi_clearSelect();
+	spi_unselect(spi_ss);
 }
 
 
-static void btle_radioSetReg(uint8_t reg, uint8_t value)
+static void btle_set_register(uint8_t reg, uint8_t value, btle_t *driver)
 {
-	spi_setSelect();
+	uint8_t spi_ss = driver -> spi_ss;
+
+	spi_select(spi_ss);
 	spi_transfer(RF_CMD_WREG | reg);
 	spi_transfer(value);
-	spi_clearSelect();
+	spi_unselect(spi_ss);
 }
 
 
-static inline void btle_radioSetup()
+static inline void btle_radioSetup(btle_t *driver)
 {
+	uint8_t spi_ss = driver -> spi_ss;
+
 	// no auto ack
-	btle_radioSetReg(RF_REG_ENAA, 0x00);
+	btle_set_register(RF_REG_ENAA,    0x00, driver);
 	// set 32bit address
-	btle_radioSetReg(RF_REG_SETAW, 0x02);
+	btle_set_register(RF_REG_SETAW,   0x02, driver);
 	// data rate 1mbps
-	btle_radioSetReg(RF_REG_SETRF, 0x06);
+	btle_set_register(RF_REG_SETRF,   0x06, driver);
 	// disable retransmissions
-	btle_radioSetReg(RF_REG_SETRETR, 0x00);
+	btle_set_register(RF_REG_SETRETR, 0x00, driver);
 	// set BTLE channel address
-	spi_setSelect();
+	spi_select(spi_ss);
 	spi_transfer(RF_CMD_WREG | RF_REG_RXAP0);
 	spi_setLSBFirst();
 	spi_transfer(BTLE_ADV_ADDR0);
@@ -71,27 +79,28 @@ static inline void btle_radioSetup()
 	spi_transfer(BTLE_ADV_ADDR2);
 	spi_transfer(BTLE_ADV_ADDR3);
 	spi_setMSBFirst();
-	spi_clearSelect();
+	spi_unselect(spi_ss);
 	// payload width
-	btle_radioSetReg(RF_REG_RXWP0, 32);
+	btle_set_register(RF_REG_RXWP0,    32, driver);
 	// RX on pipe 0
-	btle_radioSetReg(RF_REG_RXADDR, 0x01);
+	btle_set_register(RF_REG_RXADDR, 0x01, driver);
 	// clear flags
-	btle_radioSetReg(RF_REG_STATUS, RF_STATUS_ALL);
+	btle_set_register(RF_REG_STATUS, RF_STATUS_ALL, driver);
 	// power up, no CRC, PRIM_RX
-	btle_radioSetReg(RF_REG_CONFIG, 0x33);
+	btle_set_register(RF_REG_CONFIG, 0x33, driver);
+
 	_delay_ms(RF_DELAY_START);
 }
 
 
-void btle_radioDisable(void)
+void btle_disable(void)
 {
 	RADIO_PORT_CE &= ~(1 << RADIO_CE);
 	cli();
 }
 
 
-void btle_radioEnable(void)
+void btle_enable(void)
 {
 	sei();
 	RADIO_PORT_CE |= (1 << RADIO_CE);
@@ -99,44 +108,67 @@ void btle_radioEnable(void)
 }
 
 
-void btle_init(uint8_t *buf)
+void btle_init(btle_t *driver)
 {
-	btle_driver.rx_buffer = buf;
 	RADIO_DDR_CE |= (1 << RADIO_CE);
 	spi_init();
-	btle_radioSetup();
-	btle_radioCommand(RF_CMD_FLUSHRX);
-	btle_radioCommand(RF_CMD_FLUSHTX);
+	spi_bind(driver -> spi_ss);
+
+	btle_radioSetup(driver);
+	btle_send_command(RF_CMD_FLUSHRX, driver);
+	btle_send_command(RF_CMD_FLUSHTX, driver);
 }
 
 
-uint8_t btle_dataPending(void)
+uint8_t btle_received(btle_t *driver)
 {
-	uint8_t temp = btle_driver.rx_in;
-	btle_driver.rx_in = 0;
-	return temp;
+	uint8_t status = driver -> rx_in;
+	driver -> rx_in = 0;
+	return status;
 }
 
 
-void btle_hopChannel(void)
+void btle_set_channel(uint8_t channel, btle_t *driver)
 {
-	btle_driver.channel = (btle_driver.channel < 2) ? btle_driver.channel + 1 : 0;
-	btle_radioSetReg(RF_REG_RFCH, ch_phy[btle_driver.channel]);
+	driver -> ch = channel;
+	btle_set_register(RF_REG_RFCH, ch_phy[channel], driver);
 }
 
 
-ISR(INT0_vect)
+void btle_load(btle_t *driver)
 {
-	cli();
-	btle_radioSetReg(RF_REG_STATUS, RF_STATUS_ALL);
-	spi_setSelect();
+	uint8_t spi_ss = driver -> spi_ss;
+	btle_set_register(RF_REG_STATUS, RF_STATUS_ALL, driver);
+	spi_select(spi_ss);
 	spi_transfer(RF_CMD_READRX);
 	spi_setLSBFirst();
 	for (uint8_t i = 0; i < 32; i++) {
-		*(btle_driver.rx_buffer + i) = spi_transfer(RF_CMD_NOP);
+		*(driver -> rx_buffer + i) = spi_transfer(RF_CMD_NOP);
 	}
 	spi_setMSBFirst();
-	spi_clearSelect();
-	btle_driver.rx_in = 1;
-	sei();
+	spi_unselect(spi_ss);
+}
+
+
+void btle_decode(btle_t *driver)
+{
+	driver -> rx_in = 0;
+	/* check packet validity */
+	uint16_t header = *((uint16_t *) driver -> rx_buffer);
+	uint8_t channel = driver -> ch + 37;
+	btle_whiten((uint8_t *) &header, 2, channel);
+	uint8_t pdu_type = *((uint8_t *) &header + BTLE_PACKET_HEADER);
+	if(pdu_type != BTLE_ADV_NONCONN_IND) {
+		return;
+	}
+	uint8_t length = *((uint8_t *) &header + BTLE_PACKET_LENGTH);
+	if(length > 27 || length < 6) {
+		return;
+	}
+
+	/* decode the rest of it when valid */
+	driver -> rx_len = length;
+	btle_whiten(driver -> rx_buffer, length + 5, channel);
+	driver -> rx_crc = btle_crc(driver -> rx_buffer, length + 2);
+	driver -> rx_in = 1;
 }

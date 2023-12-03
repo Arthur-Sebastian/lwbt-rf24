@@ -1,7 +1,9 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <stddef.h>
 
 #include "config.h"
+#include <stdint.h>
 #include <util/delay.h>
 
 #include "spi.h"
@@ -12,10 +14,8 @@
 #define BAUD 9600
 #define UBRR (F_CPU/16/BAUD-1)
 
-#define PIN_CE    (1 << 0)
+btle_t radio_a;
 
-
-static uint8_t rx_buf[34];
 static const char toHex[] = {
 	'0', '1', '2', '3',
 	'4', '5', '6', '7',
@@ -63,18 +63,28 @@ static void uart_hex(uint8_t data)
 
 static void setup(void)
 {
-	/* enable INT0 */
-	EIMSK = 0x01;
-	EICRA = 0x02;
+	/* enable PCINT 12, 10, 8 */
+	PCICR = (1 << PCIE1);
+	PCMSK1 = (1 << PCINT12);
 	/* config UART */
 	UBRR0H = (uint8_t)(UBRR >> 8);
 	UBRR0L = (uint8_t) UBRR;
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 	UCSR0C = (1 << USBS0) | (3 << UCSZ00);
-
-	rx_buf[32] = '\n';
-	rx_buf[33] = '\0';
 	uart_print("> START\n");
+}
+
+
+ISR(PCINT1_vect)
+{
+	cli();
+
+	if((PINC & (1 << PC4)) == 0) {
+		btle_load(&radio_a);
+		btle_decode(&radio_a);
+	}
+
+	sei();
 }
 
 
@@ -94,32 +104,18 @@ static void rf_diag(void)
 
 	uart_print("> DIAG\n");
 	for (uint8_t i = 0; i < sizeof(regs); i++) {
-		spi_setSelect();
+		spi_select(PC5);
 		spi_transfer(RF_CMD_RREG | regs[i]);
 		res = spi_transfer(RF_CMD_NOP);
-		spi_clearSelect();
+		spi_unselect(PC5);
 		uart_bin(res);
 	}
-
 	uart_print("> END DIAG\n");
 }
 
 
-static uint8_t btle_checkpacket(uint8_t *data)
+void print_bytes(uint8_t* data, uint8_t length)
 {
-	if (*(data + BTLE_PACKET_HEADER) != BTLE_ADV_NONCONN_IND) {
-		return -1;
-	}
-	uint8_t pduLength = *(data + BTLE_PACKET_LENGTH);
-	if (pduLength > 27 || pduLength < 6) {
-		return -1;
-	}
-
-	return 0;
-}
-
-
-void print_bytes(uint8_t* data, uint8_t length) {
 	for(uint8_t i = 0; i < length; i++) {
 		//uart_bin(*(data + i));
 		uart_hex(*(data + i));
@@ -127,45 +123,34 @@ void print_bytes(uint8_t* data, uint8_t length) {
 	uart_print("\n");
 }
 
+
 int main(void)
 {
+	radio_a.spi_ss = PC5;
 	uint8_t current = 0;
-	uint16_t header;
-	uint32_t crc;
 
 	setup();
-	btle_init((uint8_t *) rx_buf);
-	//rf_diag();
+	btle_init(&radio_a);
+	rf_diag();
 
 	while (1) {
-		btle_radioEnable();
+		btle_enable();
 		_delay_ms(20);
-		btle_radioDisable();
-
-		if (btle_dataPending() != 0) {
-
-			header = *((uint16_t *) rx_buf);
-			btle_whiten((uint8_t *) &header, 2, 37 + current);
-
-			if (btle_checkpacket((uint8_t *) &header) == 0) {
-				uint8_t pdu_len = *((uint8_t *) &header + BTLE_PACKET_LENGTH);
-				btle_whiten((uint8_t *) rx_buf, pdu_len + 5 , 37 + current);
-				crc = btle_crc((uint8_t *) rx_buf, pdu_len + 2);
-
-				uart_print("\nDUMP:\n");
-				print_bytes(rx_buf, pdu_len + 5);
-				uart_print("HEAD:\n");
-				print_bytes(rx_buf, 2);
-				uart_print("PDU:\n");
-				print_bytes(rx_buf + BTLE_PACKET_MAC, pdu_len);
-				uart_print("CRC:\n");
-				print_bytes(rx_buf + BTLE_PACKET_MAC + pdu_len, 3);
-				print_bytes((uint8_t *) &crc, 3);
-			}
-		}
+		btle_disable();
 
 		current = (current < 2) ? current + 1 : 0;
-		btle_hopChannel();
+		btle_set_channel(current, &radio_a);
+
+		if (!btle_received(&radio_a)) {
+			continue;
+		}
+
+		uart_print("\nDUMP:\n");
+		print_bytes(radio_a.rx_buffer, radio_a.rx_len + 5);
+		uart_print("HEAD:\n");
+		print_bytes(radio_a.rx_buffer, 2);
+		uart_print("CRC:\n");
+		print_bytes((uint8_t *) &radio_a.rx_crc, 3);
 	}
 
 	return 0;

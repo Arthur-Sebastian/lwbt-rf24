@@ -12,8 +12,6 @@
 
 void spi_init(void)
 {
-	SPI_DDR_SS |= (1 << SPI_SS);
-	SPI_PORT_SS |= (1 << SPI_SS);
 	SPI_DDR |= (1 << SPI_SCK) | (1 << SPI_MOSI) | (1 << PB2);
 	SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0);
 }
