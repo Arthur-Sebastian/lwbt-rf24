@@ -27,6 +27,10 @@
 #define BTLE_PACKET_HEADER 0
 #define BTLE_PACKET_LENGTH 1
 
+#define BTLE_META_LENGTH    5
+#define BTLE_MIN_PDU_LENGTH 6
+#define BTLE_MAX_PDU_LENGTH 27
+#define BTLE_BASE_CHANNEL   37
 
 /* Bluetooth Core 4.2, Vol 6, Part B, 1.4.1 */
 static const uint8_t ch_phy[] = {  2, 26, 80 };
@@ -58,7 +62,7 @@ static void btle_set_register(uint8_t reg, uint8_t value, btle_t *driver)
 }
 
 
-static inline void btle_radioSetup(btle_t *driver)
+static inline void btle_radio_setup(btle_t *driver)
 {
 	uint8_t spi_ss = driver -> spi_ss;
 
@@ -108,13 +112,14 @@ void btle_enable(void)
 }
 
 
-void btle_init(btle_t *driver)
+void btle_init(btle_t *driver, uint8_t spi_ss)
 {
+	driver -> spi_ss = spi_ss;
 	RADIO_DDR_CE |= (1 << RADIO_CE);
 	spi_init();
-	spi_bind(driver -> spi_ss);
+	spi_bind(spi_ss);
 
-	btle_radioSetup(driver);
+	btle_radio_setup(driver);
 	btle_send_command(RF_CMD_FLUSHRX, driver);
 	btle_send_command(RF_CMD_FLUSHTX, driver);
 }
@@ -134,11 +139,11 @@ void btle_set_channel(uint8_t channel, btle_t *driver)
 	btle_set_register(RF_REG_RFCH, ch_phy[channel], driver);
 }
 
-
 void btle_load(btle_t *driver)
 {
 	uint8_t spi_ss = driver -> spi_ss;
 	btle_set_register(RF_REG_STATUS, RF_STATUS_ALL, driver);
+
 	spi_select(spi_ss);
 	spi_transfer(RF_CMD_READRX);
 	spi_setLSBFirst();
@@ -152,23 +157,24 @@ void btle_load(btle_t *driver)
 
 void btle_decode(btle_t *driver)
 {
+	uint8_t *buffer_ptr = driver -> rx_buffer;
 	driver -> rx_in = 0;
 	/* check packet validity */
-	uint16_t header = *((uint16_t *) driver -> rx_buffer);
-	uint8_t channel = driver -> ch + 37;
+	uint16_t header = *((uint16_t *) buffer_ptr);
+	uint8_t channel = driver -> ch + BTLE_BASE_CHANNEL;
 	btle_whiten((uint8_t *) &header, 2, channel);
 	uint8_t pdu_type = *((uint8_t *) &header + BTLE_PACKET_HEADER);
 	if(pdu_type != BTLE_ADV_NONCONN_IND) {
 		return;
 	}
 	uint8_t length = *((uint8_t *) &header + BTLE_PACKET_LENGTH);
-	if(length > 27 || length < 6) {
+	if(length > BTLE_MAX_PDU_LENGTH || length < BTLE_MIN_PDU_LENGTH) {
 		return;
 	}
 
 	/* decode the rest of it when valid */
 	driver -> rx_len = length;
-	btle_whiten(driver -> rx_buffer, length + 5, channel);
-	driver -> rx_crc = btle_crc(driver -> rx_buffer, length + 2);
+	btle_whiten(buffer_ptr, length + BTLE_META_LENGTH, channel);
+	driver -> rx_crc = btle_crc(buffer_ptr, length + 2);
 	driver -> rx_in = 1;
 }

@@ -25,7 +25,7 @@ typedef struct {
 } btle_t;
 
 
-void btle_init(btle_t *driver);
+void btle_init(btle_t *driver, uint8_t spi_ss);
 
 
 void btle_enable(void);

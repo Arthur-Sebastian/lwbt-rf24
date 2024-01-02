@@ -143,19 +143,18 @@ void print_bytes(uint8_t* data, uint8_t length)
 int main(void)
 {
 	setup();
+	#ifndef MULTI_RADIO
 	uint8_t current = 0;
+	#endif
 
-	radio_a.spi_ss = RADIO_A_SS;
-	btle_init(&radio_a);
+	btle_init(&radio_a, RADIO_A_SS);
 	#ifdef MULTI_RADIO
 	btle_set_channel(0, &radio_a);
 
-	radio_b.spi_ss = RADIO_B_SS;
-	btle_init(&radio_b);
+	btle_init(&radio_b, RADIO_B_SS);
 	btle_set_channel(1, &radio_b);
 
-	radio_c.spi_ss = RADIO_C_SS;
-	btle_init(&radio_c);
+	btle_init(&radio_c, RADIO_C_SS);
 	btle_set_channel(2, &radio_c);
 
 	btle_enable();
