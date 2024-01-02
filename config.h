@@ -11,7 +11,7 @@
 /**
 @brief Enables debug output on serial link.
 */
-#define DEBUG
+//#define DEBUG
 
 /**
 @brief CPU clock speed.

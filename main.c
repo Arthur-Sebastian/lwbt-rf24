@@ -29,6 +29,11 @@ static const char toHex[] = {
 };
 
 
+static void uart_char(char data) {
+	while ( !(UCSR0A & (1 << UDRE0)) );;
+	UDR0 = data;
+}
+
 static void uart_print(char *data)
 {
 	while (*data != '\0') {
@@ -37,7 +42,6 @@ static void uart_print(char *data)
 		data++;
 	}
 }
-
 
 static void uart_bin(uint8_t data)
 {
@@ -77,7 +81,9 @@ static void setup(void)
 	UCSR0A = (1 << U2X0);
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 	UCSR0C = (1 << USBS0) | (3 << UCSZ00);
+	#ifdef DEBUG
 	uart_print("> BOOT\n");
+	#endif
 }
 
 
@@ -131,12 +137,22 @@ static void rf_diag(uint8_t radio_ss)
 }
 
 
-void print_bytes(uint8_t* data, uint8_t length)
+void print_hex(uint8_t* data, uint8_t length)
 {
 	for(uint8_t i = 0; i < length; i++) {
 		uart_hex(*(data + i));
 	}
-	uart_print("\n");
+}
+
+
+void print_csv(btle_t *radio)
+{
+	print_hex(radio -> rx_buffer, radio -> rx_len + 2);
+	uart_char(',');
+	print_hex(radio -> rx_buffer + radio -> rx_len + 2, 3);
+	uart_char(',');
+	print_hex((uint8_t *) &(radio -> rx_crc), 3);
+	uart_char('\n');
 }
 
 
@@ -181,20 +197,14 @@ int main(void)
 
 		cli();
 		if (btle_received(&radio_a)) {
-			print_bytes(radio_a.rx_buffer, radio_a.rx_len + 2);
-			print_bytes(radio_a.rx_buffer + radio_a.rx_len + 2, 3);
-			print_bytes((uint8_t *) &radio_a.rx_crc, 3);
+			print_csv(&radio_a);
 		}
 		#ifdef MULTI_RADIO
 		if (btle_received(&radio_b)) {
-			print_bytes(radio_b.rx_buffer, radio_b.rx_len + 2);
-			print_bytes(radio_b.rx_buffer + radio_b.rx_len + 2, 3);
-			print_bytes((uint8_t *) &radio_b.rx_crc, 3);
+			print_csv(&radio_b);
 		}
 		if (btle_received(&radio_c)) {
-			print_bytes(radio_c.rx_buffer, radio_c.rx_len + 2);
-			print_bytes(radio_c.rx_buffer + radio_c.rx_len + 2, 3);
-			print_bytes((uint8_t *) &radio_c.rx_crc, 3);
+			print_csv(&radio_c);
 		}
 		#endif
 		sei();
