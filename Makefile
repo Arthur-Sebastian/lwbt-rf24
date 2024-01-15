@@ -17,10 +17,13 @@ btle.c.o:
 spi.o:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/spi.o spi.c
 
+uart.o:
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/uart.o uart.c
+
 main.o:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/main.o main.c
 
-build: btle.s.o btle.c.o spi.o main.o
+build: btle.s.o btle.c.o spi.o uart.o main.o
 	$(CC) $(CFLAGS) -mmcu=$(MCU) -o $(BUILDDIR)/out.bin $(BUILDDIR)/*.o
 	avr-objcopy -j .data -j .text -O ihex $(BUILDDIR)/out.bin $(BUILDDIR)/program.hex
 	avr-size $(BUILDDIR)/program.hex

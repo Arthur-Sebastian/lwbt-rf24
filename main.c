@@ -9,11 +9,7 @@
 #include "spi.h"
 #include "rf24def.h"
 #include "btle.h"
-
-
-/* Effectively doubled by setting U2X0 bit in UCSR0A */
-#define BAUD 76800
-#define UBRR (F_CPU/16/BAUD-1)
+#include "uart.h"
 
 btle_t radio_a;
 #ifdef MULTI_RADIO
@@ -21,66 +17,13 @@ btle_t radio_b;
 btle_t radio_c;
 #endif
 
-static const char toHex[] = {
-	'0', '1', '2', '3',
-	'4', '5', '6', '7',
-	'8', '9', 'A', 'B',
-	'C', 'D', 'E', 'F'
-};
-
-
-static void uart_char(char data) {
-	while ( !(UCSR0A & (1 << UDRE0)) );;
-	UDR0 = data;
-}
-
-static void uart_print(char *data)
-{
-	while (*data != '\0') {
-		while ( !(UCSR0A & (1 << UDRE0)) );;
-		UDR0 = *data;
-		data++;
-	}
-}
-
-static void uart_bin(uint8_t data)
-{
-	char buf[10];
-	buf[9] = '\0';
-	buf[8] = '\n';
-
-	for (uint8_t i = 0; i < 8; i++) {
-		buf[i] = ((data & 0x80) != 0) ? '1' : '0';
-		data <<= 1;
-	}
-
-	uart_print(buf);
-}
-
-static void uart_hex(uint8_t data)
-{
-	uint8_t h_hex, l_hex;
-	l_hex = data & 0x0F;
-	h_hex = data >> 4;
-	char buf[3];
-	buf[0] = toHex[h_hex];
-	buf[1] = toHex[l_hex];
-	buf[2] = '\0';
-	uart_print(buf);
-}
-
 
 static void setup(void)
 {
 	/* enable PCINT 12, 10, 8 */
 	PCICR = (1 << PCIE1);
 	PCMSK1 = (1 << PCINT12);
-	/* config UART */
-	UBRR0H = (uint8_t)(UBRR >> 8);
-	UBRR0L = (uint8_t) UBRR;
-	UCSR0A = (1 << U2X0);
-	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-	UCSR0C = (1 << USBS0) | (3 << UCSZ00);
+	uart_init();
 	#ifdef DEBUG
 	uart_print("> BOOT\n");
 	#endif
