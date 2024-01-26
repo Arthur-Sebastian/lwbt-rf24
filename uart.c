@@ -1,5 +1,5 @@
 /**
-@file uart.h
+@file uart.c
 @brief Minimal ATmegaX8 UART driver and utilities.
 @author Artur Miller
 @copyright (C) Artur Miller 2023

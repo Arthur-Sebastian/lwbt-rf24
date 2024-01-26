@@ -12,7 +12,6 @@
 
 #define RF_DELAY_START  5
 #define RF_DELAY_POWER  5
-#define RF_DELAY_SETTLE 130
 
 #define RF_REG_CONFIG  0x00
 #define RF_REG_ENAA    0x01

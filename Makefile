@@ -20,10 +20,13 @@ spi.o:
 uart.o:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/uart.o uart.c
 
+time.o:
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/time.o time.c
+
 main.o:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/main.o main.c
 
-build: btle.s.o btle.c.o spi.o uart.o main.o
+build: btle.s.o btle.c.o spi.o uart.o time.o main.o
 	$(CC) $(CFLAGS) -mmcu=$(MCU) -o $(BUILDDIR)/out.bin $(BUILDDIR)/*.o
 	avr-objcopy -j .data -j .text -O ihex $(BUILDDIR)/out.bin $(BUILDDIR)/program.hex
 	avr-size $(BUILDDIR)/program.hex

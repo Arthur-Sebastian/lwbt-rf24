@@ -4,11 +4,11 @@
 
 #include "config.h"
 #include <stdint.h>
-#include <util/delay.h>
 
 #include "spi.h"
 #include "rf24def.h"
 #include "btle.h"
+#include "time.h"
 #include "uart.h"
 
 btle_t radio_a;
@@ -23,6 +23,7 @@ static void setup(void)
 	/* enable PCINT 12, 10, 8 */
 	PCICR = (1 << PCIE1);
 	PCMSK1 = (1 << PCINT12);
+	tm_init();
 	uart_init();
 	#ifdef DEBUG
 	uart_print("> BOOT\n");
@@ -90,6 +91,14 @@ void print_hex(uint8_t* data, uint8_t length)
 
 void print_csv(btle_t *radio)
 {
+	uint32_t time = tm_ms();
+	uint8_t *time_ptr = (uint8_t *) &time;
+	uart_hex(*(time_ptr + 2));
+	uart_hex(*(time_ptr + 1));
+	uart_hex(*(time_ptr));
+	uart_char(',');
+	uart_char('0' + radio -> ch);
+	uart_char(',');
 	print_hex(radio -> rx_buffer, radio -> rx_len + 2);
 	uart_char(',');
 	print_hex(radio -> rx_buffer + radio -> rx_len + 2, 3);
@@ -131,7 +140,7 @@ int main(void)
 	while (1) {
 		#ifndef MULTI_RADIO
 		btle_enable();
-		_delay_ms(LISTEN_DURATION);
+		tm_halt(LISTEN_DURATION);
 		btle_disable();
 
 		current = (current < 2) ? current + 1 : 0;

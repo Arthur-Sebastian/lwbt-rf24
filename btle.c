@@ -8,8 +8,8 @@
 #include "config.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <util/delay.h>
 #include <stdint.h>
+#include "time.h"
 #include "btle.h"
 #include "spi.h"
 #include "rf24def.h"
@@ -93,7 +93,7 @@ static inline void btle_radio_setup(btle_t *driver)
 	// power up, no CRC, PRIM_RX
 	btle_set_register(RF_REG_CONFIG, 0x33, driver);
 
-	_delay_ms(RF_DELAY_START);
+	tm_halt(RF_DELAY_START);
 }
 
 
@@ -108,7 +108,6 @@ void btle_enable(void)
 {
 	sei();
 	RADIO_PORT_CE |= (1 << RADIO_CE);
-	_delay_us(RF_DELAY_SETTLE);
 }
 
 
