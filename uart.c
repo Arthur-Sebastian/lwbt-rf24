@@ -73,3 +73,11 @@ void uart_bin(uint8_t data)
 
 	uart_print(buf);
 }
+
+
+void uart_print_hex(uint8_t* data, uint8_t length)
+{
+	for(uint8_t i = 0; i < length; i++) {
+		uart_hex(*(data + i));
+	}
+}

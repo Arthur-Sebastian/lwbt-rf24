@@ -81,14 +81,6 @@ static void rf_diag(uint8_t radio_ss)
 }
 
 
-void print_hex(uint8_t* data, uint8_t length)
-{
-	for(uint8_t i = 0; i < length; i++) {
-		uart_hex(*(data + i));
-	}
-}
-
-
 void print_csv(btle_t *radio)
 {
 	uint32_t time = tm_ms();
@@ -99,11 +91,11 @@ void print_csv(btle_t *radio)
 	uart_char(',');
 	uart_char('0' + radio -> ch);
 	uart_char(',');
-	print_hex(radio -> rx_buffer, radio -> rx_len + 2);
+	uart_print_hex(radio -> buffer, radio -> buffer_len + 2);
 	uart_char(',');
-	print_hex(radio -> rx_buffer + radio -> rx_len + 2, 3);
+	uart_print_hex(radio -> buffer + radio -> buffer_len + 2, 3);
 	uart_char(',');
-	print_hex((uint8_t *) &(radio -> rx_crc), 3);
+	uart_print_hex((uint8_t *) &(radio -> rx_crc), 3);
 	uart_char('\n');
 }
 

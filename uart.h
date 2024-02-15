@@ -29,4 +29,7 @@ void uart_hex(uint8_t data);
 
 void uart_bin(uint8_t data);
 
+
+void uart_print_hex(uint8_t* data, uint8_t length);
+
 #endif
