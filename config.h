@@ -8,6 +8,8 @@
 #ifndef CONFIG
 #define CONFIG
 
+#include "./rf24def.h"
+
 /**
 @brief Enables debug output on serial link.
 */
@@ -23,10 +25,15 @@
 */
 #define MULTI_RADIO
 
+#define BTLE_MODE BTLE_TX
+
+
+#define BTLE_PA_LEVEL RF_PA_MID
+
 /**
-@brief Channel listening duration in milliseconds.
+@brief Operation (RX or TX) duration in milliseconds.
 */
-#define LISTEN_DURATION 20
+#define OPERATION_DURATION 200
 
 #define RADIO_A_SS  PC5
 #define RADIO_A_IRQ PC4

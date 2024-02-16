@@ -31,6 +31,8 @@
 #define RF_REG_RXAP5   0x0F
 #define RF_REG_TXADDR  0x10
 #define RF_REG_RXWP0   0x11
+#define RF_REG_DYNPD   0x1C
+#define RF_REG_FEAT    0x1D
 
 #define RF_CMD_RREG    0x00
 #define RF_CMD_WREG    0x20
@@ -44,5 +46,10 @@
 #define RF_STATUS_TXREADY 0x20
 #define RF_STATUS_MAXRT   0x10
 #define RF_STATUS_ALL     0x70
+
+#define RF_PA_LOW  0x00 /* -18dBm */
+#define RF_PA_MID  0x02 /* -12dBm */
+#define RF_PA_HIGH 0x04 /*  -6dBm */
+#define RF_PA_MAX  0x06 /*   0dBm */
 
 #endif
