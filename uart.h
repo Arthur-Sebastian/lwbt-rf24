@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "btle.h"
 
 /* Effectively doubled by setting U2X0 bit in UCSR0A */
 #define BAUD 76800
@@ -31,5 +32,8 @@ void uart_bin(uint8_t data);
 
 
 void uart_print_hex(uint8_t* data, uint8_t length);
+
+
+void uart_print_csv(btle_t *radio);
 
 #endif

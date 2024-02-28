@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 #include "uart.h"
+#include "time.h"
 
 #define UBRR (F_CPU/16/BAUD-1)
 
@@ -80,4 +81,23 @@ void uart_print_hex(uint8_t* data, uint8_t length)
 	for(uint8_t i = 0; i < length; i++) {
 		uart_hex(*(data + i));
 	}
+}
+
+
+void uart_print_csv(btle_t *radio)
+{
+	uint32_t time = tm_ms();
+	uint8_t *time_ptr = (uint8_t *) &time;
+	uart_hex(*(time_ptr + 2));
+	uart_hex(*(time_ptr + 1));
+	uart_hex(*(time_ptr));
+	uart_char(',');
+	uart_char('0' + radio -> ch);
+	uart_char(',');
+	uart_print_hex(radio -> buffer, radio -> buffer_len + 2);
+	uart_char(',');
+	uart_print_hex(radio -> buffer + radio -> buffer_len + 2, 3);
+	uart_char(',');
+	uart_print_hex((uint8_t *) &(radio -> rx_crc), 3);
+	uart_char('\n');
 }
