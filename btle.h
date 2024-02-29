@@ -10,9 +10,6 @@
 
 #include <stdint.h>
 
-#define RADIO_DDR_CE  DDRB
-#define RADIO_PORT_CE PORTB
-#define RADIO_CE      0
 
 typedef enum {
 	BTLE_TX,

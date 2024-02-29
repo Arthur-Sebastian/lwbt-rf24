@@ -9,7 +9,7 @@
 #define UART
 
 #include <stdint.h>
-#include "config.h"
+
 #include "btle.h"
 
 /* Effectively doubled by setting U2X0 bit in UCSR0A */

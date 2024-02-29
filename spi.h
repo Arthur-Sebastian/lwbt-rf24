@@ -5,17 +5,9 @@
 @copyright (C) Artur Miller 2023
 */
 
-#include "config.h"
 #include <stdint.h>
 
-
-#define SPI_DDR       DDRB
-#define SPI_PORT      PORTB
-#define SPI_SCK       5
-#define SPI_MISO      4
-#define SPI_MOSI      3
-#define SPI_DDR_SS    DDRC
-#define SPI_PORT_SS   PORTC
+#include "config.h"
 
 
 inline void spi_bind(uint8_t pin)

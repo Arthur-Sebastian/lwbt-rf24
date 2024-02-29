@@ -5,15 +5,15 @@
 @copyright (C) Artur Miller 2023
 */
 
-#include "config.h"
 #include <avr/io.h>
-#include <avr/interrupt.h>
 #include <stdint.h>
+
+#include "config.h"
+
 #include "time.h"
 #include "btle.h"
-#include "spi.h"
 #include "rf24def.h"
-#include "uart.h"
+#include "spi.h"
 
 
 /* Bluetooth Core 4.2, Vol 6, Part B, 2.1.2 */
@@ -110,20 +110,17 @@ static inline void btle_radio_setup(btle_t *driver)
 		| int_mask;
 	// power up, no CRC, PRIM_RX = mode, interrupt mask dependent on mode
 	btle_set_register(RF_REG_CONFIG, config, driver);
-	tm_halt(RF_DELAY_START);
 }
 
 
 void btle_disable(void)
 {
 	RADIO_PORT_CE &= ~(1 << RADIO_CE);
-	cli();
 }
 
 
 void btle_enable(void)
 {
-	sei();
 	RADIO_PORT_CE |= (1 << RADIO_CE);
 }
 
@@ -133,10 +130,12 @@ void btle_init(btle_t *driver, uint8_t spi_ss, btle_mode_t mode)
 	driver -> mode = mode;
 	driver -> spi_ss = spi_ss;
 	RADIO_DDR_CE |= (1 << RADIO_CE);
+
 	spi_init();
 	spi_bind(spi_ss);
 
 	btle_radio_setup(driver);
+
 	btle_send_command(RF_CMD_FLUSHRX, driver);
 	btle_send_command(RF_CMD_FLUSHTX, driver);
 }
@@ -210,11 +209,6 @@ void btle_advertise(btle_t* driver, uint8_t* data, uint8_t size) {
 	}
 	uint32_t crc = btle_crc(buffer_ptr, size);
 	*((uint32_t *) (buffer_ptr + size)) = crc;
-
-	uart_print_hex(buffer_ptr, size);
-	uart_char(',');
-	uart_print_hex(buffer_ptr + size, BTLE_CRC_LENGTH);
-	uart_char('\n');
 
 	btle_whiten(buffer_ptr, size + BTLE_CRC_LENGTH, channel);
 

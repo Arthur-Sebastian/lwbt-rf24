@@ -8,25 +8,32 @@ SERIAL=/dev/ttyUSB0
 
 .DEFAULT_GOAL := build
 
-btle.s.o:
+
+# dependency modules
+
+btle:
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/btle.c.o btle.c
 	avr-gcc -mmcu=$(MCU) -c -o $(BUILDDIR)/btle.s.o btle.S
 
-btle.c.o:
-	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/btle.c.o btle.c
-
-spi.o:
+spi:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/spi.o spi.c
 
-uart.o:
+uart:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/uart.o uart.c
 
-time.o:
+time:
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/time.o time.c
 
-main.o:
-	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/main.o main.c
+programs:
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/tx_single.o samples/tx_single.c
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/rx_single.o samples/rx_single.c
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/rx_multi.o  samples/rx_multi.c
 
-build: btle.s.o btle.c.o spi.o uart.o time.o main.o
+
+# targets
+
+build: btle spi uart time programs
+	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/main.o main.c
 	$(CC) $(CFLAGS) -mmcu=$(MCU) -o $(BUILDDIR)/out.bin $(BUILDDIR)/*.o
 	avr-objcopy -j .data -j .text -O ihex $(BUILDDIR)/out.bin $(BUILDDIR)/program.hex
 	avr-size $(BUILDDIR)/program.hex

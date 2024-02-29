@@ -7,6 +7,9 @@
 
 #include <avr/io.h>
 #include <stdint.h>
+
+#include "config.h"
+
 #include "uart.h"
 #include "time.h"
 

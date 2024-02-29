@@ -8,48 +8,52 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdint.h>
-#include "time.h"
 
-uint32_t ovf = 0;
-uint8_t tm_half = 0;
+#include "config.h"
+#include "time.h"
+#include "uart.h"
+
+
+uint32_t ov_ctr = 0;
+
+
+ISR(TIMER0_OVF_vect, ISR_NOBLOCK)
+{
+	/* there is no way that this interrupt fires twice,
+	 * skip disabling its source for speed */
+	ov_ctr++;
+}
 
 
 void tm_init(void)
 {
-	ovf = 0;
+	ov_ctr = 0;
 	/* enable TIMER0 interrupt */
-	TIMSK0 |= (1<<TOIE0);
+	TIMSK0 |= (1 << TOIE0);
 	/* start TIMER0 @ 2MHz */
-	TCCR0B = (TCCR0B&0b11111000) | (1<<CS01);
-}
-
-
-ISR(TIMER0_OVF_vect)
-{
-	ovf++;
+	TCCR0B = (TCCR0B&0b11111000) | (1 << CS01);
 }
 
 
 uint32_t tm_ms(void)
 {
-	cli();
-	uint32_t temp = ovf >> 3;
-	sei();
+	TIMSK0 &=~ (1 << TOIE0);
+	uint32_t temp = ov_ctr >> 3;
+	TIMSK0 |= (1 << TOIE0);
 	return temp;
 }
 
 
 void tm_halt(uint16_t ms)
 {
-	uint32_t temp = ovf;
-	ovf = 0;
+	uint32_t temp = ov_ctr;
+	ov_ctr = 0;
 	while(tm_ms() < ms);;
-	ovf = temp;
+	ov_ctr = temp;
 }
 
 
 void tm_reset(void)
 {
-	ovf = 0;
+	ov_ctr = 0;
 }
-
