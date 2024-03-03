@@ -14,46 +14,47 @@
 #include "uart.h"
 
 
-static uint32_t ov_ctr = 0;
+static uint32_t ms_ctr = 0;
 
 
-ISR(TIMER0_OVF_vect, ISR_NOBLOCK)
+ISR(TIMER1_COMPA_vect, ISR_NOBLOCK)
 {
 	/* there is no way that this interrupt fires twice,
 	 * skip disabling its source for speed */
-	ov_ctr++;
+	ms_ctr++;
 }
 
 
 void tm_init(void)
 {
-	ov_ctr = 0;
-	/* enable TIMER0 interrupt */
-	TIMSK0 |= (1 << TOIE0);
-	/* start TIMER0 @ 2MHz */
-	TCCR0B = (TCCR0B&0b11111000) | (1 << CS01);
+	/* start TIMER1 with @250kHz, CTC mode */
+	TCCR1B = (1 << CS11) | (1 << CS10) | (1 << WGM12);
+	/* 250 cycles at 250kHz = 1ms */
+	OCR1AL = 250;
+	/* enable TIMER1 OCM interrupt */
+	TIMSK1 = (1 << OCIE1A);
 }
 
 
 uint32_t tm_ms(void)
 {
-	TIMSK0 &=~ (1 << TOIE0);
-	uint32_t temp = ov_ctr >> 3;
-	TIMSK0 |= (1 << TOIE0);
+	TIMSK1 &=~ (1 << OCIE1A);
+	uint32_t temp = ms_ctr;
+	TIMSK1 |= (1 << OCIE1A);
 	return temp;
 }
 
 
 void tm_halt(uint16_t ms)
 {
-	uint32_t temp = ov_ctr;
-	ov_ctr = 0;
+	uint32_t temp = ms_ctr;
+	ms_ctr = 0;
 	while(tm_ms() < ms);;
-	ov_ctr = temp;
+	ms_ctr = temp;
 }
 
 
 void tm_reset(void)
 {
-	ov_ctr = 0;
+	ms_ctr = 0;
 }
