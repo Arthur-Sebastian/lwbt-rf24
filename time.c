@@ -14,7 +14,7 @@
 #include "uart.h"
 
 
-uint32_t ov_ctr = 0;
+static uint32_t ov_ctr = 0;
 
 
 ISR(TIMER0_OVF_vect, ISR_NOBLOCK)

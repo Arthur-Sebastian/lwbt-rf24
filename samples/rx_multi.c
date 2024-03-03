@@ -9,9 +9,9 @@
 #include "../uart.h"
 
 
-btle_t radio_a;
-btle_t radio_b;
-btle_t radio_c;
+static btle_t radio_a;
+static btle_t radio_b;
+static btle_t radio_c;
 
 
 /* ISR macro usage sets up an interrupt vector,
@@ -62,6 +62,7 @@ void rx_multi_setup(void)
 
 void rx_multi_loop(void)
 {
+	PCICR  &=~ (1 << PCIE1);
 	if (btle_received(&radio_a)) {
 		uart_print_csv(&radio_a);
 	}
@@ -71,4 +72,5 @@ void rx_multi_loop(void)
 	if (btle_received(&radio_c)) {
 		uart_print_csv(&radio_c);
 	}
+	PCICR  |= (1 << PCIE1);
 }

@@ -35,9 +35,6 @@
 #define BTLE_MAX_PDU_LENGTH 27
 #define BTLE_BASE_CHANNEL   37
 
-/* Bluetooth Core 4.2, Vol 6, Part B, 1.4.1 */
-static const uint8_t ch_phy[] = {  2, 26, 80 };
-
 
 /* implemented in btle.S */
 extern uint32_t btle_crc(uint8_t *data, uint8_t len);
@@ -151,9 +148,13 @@ uint8_t btle_received(btle_t *driver)
 
 void btle_set_channel(uint8_t channel, btle_t *driver)
 {
+	/* Bluetooth Core 4.2, Vol 6, Part B, 1.4.1 */
+	const uint8_t ch_phy[] = {  2, 26, 80 };
+
 	driver -> ch = channel;
 	btle_set_register(RF_REG_RFCH, ch_phy[channel], driver);
 }
+
 
 void btle_load(btle_t *driver)
 {

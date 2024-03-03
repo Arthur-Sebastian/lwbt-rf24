@@ -1,6 +1,6 @@
 CC=avr-gcc
 MCU=atmega168p
-CFLAGS=-Wall -Os -mrelax
+CFLAGS=-Wall -Os -mrelax -ffunction-sections -fdata-sections
 BUILDDIR=./bin
 UPL=avrdude
 UPLFLAGS=-p m168p -b 115200 -c arduino
@@ -34,9 +34,9 @@ programs:
 
 build: btle spi uart time programs
 	$(CC) $(CFLAGS) -c -mmcu=$(MCU) -o $(BUILDDIR)/main.o main.c
-	$(CC) $(CFLAGS) -mmcu=$(MCU) -o $(BUILDDIR)/out.bin $(BUILDDIR)/*.o
+	$(CC) $(CFLAGS) -Wl,-gc-sections,-print-gc-sections -mmcu=$(MCU) -o $(BUILDDIR)/out.bin $(BUILDDIR)/*.o
 	avr-objcopy -j .data -j .text -O ihex $(BUILDDIR)/out.bin $(BUILDDIR)/program.hex
-	avr-size $(BUILDDIR)/program.hex
+	avr-size -Bt $(BUILDDIR)/out.bin
 
 asm: build
 	avr-objdump -m avr5 -S -d $(BUILDDIR)/out.bin

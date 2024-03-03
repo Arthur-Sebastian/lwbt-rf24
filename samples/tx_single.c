@@ -10,7 +10,7 @@
 #include "../time.h"
 
 
-btle_t radio_a;
+static btle_t radio_a;
 
 
 /* ISR macro usage sets up an interrupt vector,
@@ -25,6 +25,7 @@ ISR(INT0_vect, ISR_NOBLOCK)
 }
 #endif
 
+
 void tx_single_setup(void)
 {
 	/* enable INT0 */
@@ -37,17 +38,17 @@ void tx_single_setup(void)
 	sei();
 }
 
+
 void tx_single_loop(void)
 {
 	static uint32_t then = 0;
-	const uint8_t *time_ptr = (uint8_t *) &then;
 	static uint8_t  current_ch = 0;
-
 	static uint32_t packet_id = 0;
-	static uint8_t  payload[] = {
+
+	uint8_t payload[] = {
 		0x42, 0x1B, /* ADV TYPE, PDU LENGTH */
 		0xC8, 0x53, 0x5F, 0x05, 0xC2, 0x73, /* MAC ADDRESS */
-		0x11, 0xFF, 0xEF, 0xBE, /* MANUFACTURER DATA, COMPANY IDENTIFIER */
+		0x14, 0xFF, 0xEF, 0xBE, /* MANUFACTURER DATA, COMPANY IDENTIFIER */
 		0xFF, 0xFF, 0x00, 0x00 ,0xAA, 0xAA, 0xDE, 0xAD, 0xBE, 0xEF, 0xDE, 0xAD, 0xBE, 0xEF,
 		0x00, 0x00, 0x00 /* PACKET ID */
 	};
@@ -59,12 +60,8 @@ void tx_single_loop(void)
 		*((uint32_t *) (payload + sizeof(payload) - 3)) = packet_id;
 		btle_advertise(&radio_a, payload, sizeof(payload));
 
-		uart_hex(*(time_ptr + 2));
-		uart_hex(*(time_ptr + 1));
-		uart_hex(*(time_ptr));
-		uart_char(',');
-		uart_print_hex(payload, payload[1] + 2);
-		uart_char('\n');
+		btle_decode(&radio_a);
+		uart_print_csv(&radio_a);
 
 		packet_id++;
 	
