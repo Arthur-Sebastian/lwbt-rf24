@@ -124,6 +124,9 @@ void btle_enable(void)
 
 void btle_init(btle_t *driver, uint8_t spi_ss, btle_mode_t mode)
 {
+	driver -> buffer = &(driver -> a_buffer);
+	driver -> back_buffer = &(driver -> b_buffer);
+
 	driver -> mode = mode;
 	driver -> spi_ss = spi_ss;
 	RADIO_DDR_CE |= (1 << RADIO_CE);
@@ -140,9 +143,8 @@ void btle_init(btle_t *driver, uint8_t spi_ss, btle_mode_t mode)
 
 uint8_t btle_received(btle_t *driver)
 {
-	uint8_t status = driver -> buffer_in;
-	driver -> buffer_in = 0;
-	return status;
+	buffer_t *buffer = driver -> back_buffer;
+	return buffer -> size > 0;
 }
 
 
@@ -158,6 +160,7 @@ void btle_set_channel(uint8_t channel, btle_t *driver)
 
 void btle_load(btle_t *driver)
 {
+	buffer_t *buffer = driver -> back_buffer;
 	uint8_t spi_ss = driver -> spi_ss;
 	btle_set_register(RF_REG_STATUS, RF_STATUS_ALL, driver);
 
@@ -165,19 +168,27 @@ void btle_load(btle_t *driver)
 	spi_transfer(RF_CMD_READRX);
 	spi_setLSBFirst();
 	for (uint8_t i = 0; i < 32; i++) {
-		*(driver -> buffer + i) = spi_transfer(RF_CMD_NOP);
+		*(buffer -> data + i) = spi_transfer(RF_CMD_NOP);
 	}
 	spi_setMSBFirst();
 	spi_unselect(spi_ss);
 }
 
 
+void btle_swap_buffers(btle_t *driver)
+{
+	buffer_t *temp = driver -> buffer;
+	driver -> buffer = driver -> back_buffer;
+	driver -> back_buffer = temp;
+}
+
+
 void btle_decode(btle_t *driver)
 {
-	uint8_t *buffer_ptr = driver -> buffer;
-	driver -> buffer_in = 0;
+	buffer_t *buffer = driver -> back_buffer;
+	buffer -> size = 0;
 	/* check packet validity */
-	uint16_t header = *((uint16_t *) buffer_ptr);
+	uint16_t header = *((uint16_t *) buffer -> data);
 	uint8_t channel = driver -> ch + BTLE_BASE_CHANNEL;
 	btle_whiten((uint8_t *) &header, 2, channel);
 	uint8_t pdu_type = *((uint8_t *) &header + BTLE_PACKET_HEADER);
@@ -190,28 +201,29 @@ void btle_decode(btle_t *driver)
 	}
 
 	/* decode the rest of it when valid */
-	driver -> buffer_len = length;
-	btle_whiten(buffer_ptr, length + BTLE_HEADER_LENGTH + BTLE_CRC_LENGTH, channel);
-	driver -> rx_crc = btle_crc(buffer_ptr, length + BTLE_HEADER_LENGTH);
-	driver -> buffer_in = 1;
+	buffer -> size = length;
+	btle_whiten(buffer -> data, length + BTLE_HEADER_LENGTH + BTLE_CRC_LENGTH, channel);
+	buffer -> crc = btle_crc(buffer -> data, length + BTLE_HEADER_LENGTH);
 }
 
-void btle_advertise(btle_t *driver, uint8_t *data, uint8_t size) {
+void btle_advertise(btle_t *driver, uint8_t *data, uint8_t size)
+{
 	if(driver -> mode != BTLE_TX) {
 		return;
 	}
 
+	buffer_t *buffer = driver -> buffer;
+	buffer -> size = size;
 	uint8_t spi_ss = driver -> spi_ss;
 	uint8_t channel = driver -> ch + BTLE_BASE_CHANNEL;
-	uint8_t *buffer_ptr = driver -> buffer;
 
 	for(uint8_t i = 0; i < size; i++) {
-		*(buffer_ptr + i) = *(data + i);
+		*(buffer -> data + i) = *(data + i);
 	}
-	uint32_t crc = btle_crc(buffer_ptr, size);
-	*((uint32_t *) (buffer_ptr + size)) = crc;
+	uint32_t crc = btle_crc(buffer -> data, size);
+	*((uint32_t *) (buffer -> data + size)) = crc;
 
-	btle_whiten(buffer_ptr, size + BTLE_CRC_LENGTH, channel);
+	btle_whiten(buffer -> data, size + BTLE_CRC_LENGTH, channel);
 
 	btle_send_command(RF_CMD_FLUSHTX, driver);
 
@@ -219,7 +231,7 @@ void btle_advertise(btle_t *driver, uint8_t *data, uint8_t size) {
 	spi_transfer(RF_CMD_WRITETX);
 	spi_setLSBFirst();
 	for(uint8_t i = 0; i < size + BTLE_CRC_LENGTH; i++) {
-		spi_transfer(*(buffer_ptr + i));
+		spi_transfer(*(buffer -> data + i));
 	}
 	spi_setMSBFirst();
 	spi_unselect(spi_ss);

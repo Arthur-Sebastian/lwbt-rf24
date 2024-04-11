@@ -16,12 +16,20 @@ typedef enum {
 	BTLE_RX
 } btle_mode_t;
 
+
+typedef struct {
+	uint8_t  data[32];
+	uint8_t  size;
+	uint32_t crc;
+} buffer_t;
+
 typedef struct {
 	uint8_t      ch;
-	uint8_t      buffer[32];
-	uint32_t     rx_crc;
-	uint8_t      buffer_in;
-	uint8_t      buffer_len;
+	buffer_t     *buffer;
+	buffer_t     *back_buffer;
+	buffer_t     a_buffer;
+	buffer_t     b_buffer;
+
 	uint8_t      spi_ss;
 	uint8_t      rssi_min;
 	btle_mode_t  mode;
@@ -44,6 +52,9 @@ void btle_set_channel(uint8_t channel, btle_t *driver);
 
 
 void btle_load(btle_t *driver);
+
+
+void btle_swap_buffers(btle_t *driver);
 
 
 void btle_decode(btle_t *driver);

@@ -60,6 +60,7 @@ void tx_single_loop(void)
 		*((uint32_t *) (payload + sizeof(payload) - 3)) = packet_id;
 		btle_advertise(&radio_a, payload, sizeof(payload));
 
+		btle_swap_buffers(&radio_a);
 		btle_decode(&radio_a);
 		uart_print_csv(&radio_a);
 

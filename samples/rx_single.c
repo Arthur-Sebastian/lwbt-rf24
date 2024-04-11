@@ -50,11 +50,12 @@ void rx_single_loop(void)
 	static uint32_t then = 0;
 	static uint8_t  current_ch = 0;
 
-	PCICR  &=~ (1 << PCIE1);
 	if (btle_received(&radio_a)) {
+		PCICR  &=~ (1 << PCIE1);
+		btle_swap_buffers(&radio_a);
+		PCICR  |= (1 << PCIE1);
 		uart_print_csv(&radio_a);
 	}
-	PCICR  |= (1 << PCIE1);
 
 	if(tm_ms() - then > CHANNEL_LISTEN_TIME) {
 		then = tm_ms();

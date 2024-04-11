@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <stdint.h>
 
+#include "btle.h"
 #include "config.h"
 
 #include "uart.h"
@@ -89,6 +90,7 @@ void uart_print_hex(uint8_t* data, uint8_t length)
 
 void uart_print_csv(btle_t *radio)
 {
+	buffer_t *buffer = radio -> buffer;
 	uint32_t time = tm_ms();
 	uint8_t *time_ptr = (uint8_t *) &time;
 	uint8_t rssi_min = radio -> rssi_min;
@@ -101,10 +103,10 @@ void uart_print_csv(btle_t *radio)
 	uart_char(',');
 	uart_char('0' + rssi_min);
 	uart_char(',');
-	uart_print_hex(radio -> buffer, radio -> buffer_len + 2);
+	uart_print_hex(buffer -> data, buffer -> size + 2);
 	uart_char(',');
-	uart_print_hex(radio -> buffer + radio -> buffer_len + 2, 3);
+	uart_print_hex((buffer -> data) + (buffer -> size) + 2, 3);
 	uart_char(',');
-	uart_print_hex((uint8_t *) &(radio -> rx_crc), 3);
+	uart_print_hex((uint8_t *) &(buffer -> crc), 3);
 	uart_char('\n');
 }

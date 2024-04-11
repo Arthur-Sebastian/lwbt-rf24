@@ -63,17 +63,26 @@ void rx_multi_setup(void)
 }
 
 
-void rx_multi_loop(void)
+void atomic_buffer_swap(btle_t* radio)
 {
 	PCICR  &=~ (1 << PCIE1);
+	btle_swap_buffers(radio);
+	PCICR  |= (1 << PCIE1);
+}
+
+
+void rx_multi_loop(void)
+{
 	if (btle_received(&radio_a)) {
+		atomic_buffer_swap(&radio_a);
 		uart_print_csv(&radio_a);
 	}
 	if (btle_received(&radio_b)) {
+		atomic_buffer_swap(&radio_b);
 		uart_print_csv(&radio_b);
 	}
 	if (btle_received(&radio_c)) {
+		atomic_buffer_swap(&radio_c);
 		uart_print_csv(&radio_c);
 	}
-	PCICR  |= (1 << PCIE1);
 }
