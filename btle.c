@@ -196,7 +196,7 @@ void btle_decode(btle_t *driver)
 	driver -> buffer_in = 1;
 }
 
-void btle_advertise(btle_t* driver, uint8_t* data, uint8_t size) {
+void btle_advertise(btle_t *driver, uint8_t *data, uint8_t size) {
 	if(driver -> mode != BTLE_TX) {
 		return;
 	}
@@ -222,5 +222,14 @@ void btle_advertise(btle_t* driver, uint8_t* data, uint8_t size) {
 		spi_transfer(*(buffer_ptr + i));
 	}
 	spi_setMSBFirst();
+	spi_unselect(spi_ss);
+}
+
+void btle_rssi_threshold(btle_t *driver) {
+	uint8_t spi_ss = driver -> spi_ss;
+
+	spi_select(spi_ss);
+	spi_transfer(RF_CMD_RREG | RF_REG_RPD);
+	driver -> rssi_min = spi_transfer(RF_CMD_NOP);
 	spi_unselect(spi_ss);
 }

@@ -24,14 +24,17 @@ ISR(PCINT1_vect, ISR_NOBLOCK)
 	 * by disabling its source, allowing others to run */
 	PCICR  &=~ (1 << PCIE1);
 	if((RADIO_A_PIN_REG & (1 << RADIO_A_IRQ)) == 0) {
+		btle_rssi_threshold(&radio_a);
 		btle_load(&radio_a);
 		btle_decode(&radio_a);
 	}
 	if((RADIO_B_PIN_REG & (1 << RADIO_B_IRQ)) == 0) {
+		btle_rssi_threshold(&radio_b);
 		btle_load(&radio_b);
 		btle_decode(&radio_b);
 	}
 	if((RADIO_C_PIN_REG & (1 << RADIO_C_IRQ)) == 0) {
+		btle_rssi_threshold(&radio_c);
 		btle_load(&radio_c);
 		btle_decode(&radio_c);
 	}

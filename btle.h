@@ -23,6 +23,7 @@ typedef struct {
 	uint8_t      buffer_in;
 	uint8_t      buffer_len;
 	uint8_t      spi_ss;
+	uint8_t      rssi_min;
 	btle_mode_t  mode;
 } btle_t;
 
@@ -49,5 +50,8 @@ void btle_decode(btle_t *driver);
 
 
 void btle_advertise(btle_t *driver, uint8_t *data, uint8_t size);
+
+
+void btle_rssi_threshold(btle_t *driver);
 
 #endif

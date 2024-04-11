@@ -91,11 +91,15 @@ void uart_print_csv(btle_t *radio)
 {
 	uint32_t time = tm_ms();
 	uint8_t *time_ptr = (uint8_t *) &time;
+	uint8_t rssi_min = radio -> rssi_min;
+
 	uart_hex(*(time_ptr + 2));
 	uart_hex(*(time_ptr + 1));
 	uart_hex(*(time_ptr));
 	uart_char(',');
 	uart_char('0' + radio -> ch);
+	uart_char(',');
+	uart_char('0' + rssi_min);
 	uart_char(',');
 	uart_print_hex(radio -> buffer, radio -> buffer_len + 2);
 	uart_char(',');

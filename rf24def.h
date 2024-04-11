@@ -22,7 +22,7 @@
 #define RF_REG_SETRF   0x06
 #define RF_REG_STATUS  0x07
 #define RF_REG_TXOBSV  0x08
-#define RF_REG_CD      0x09
+#define RF_REG_RPD     0x09
 #define RF_REG_RXAP0   0x0A
 #define RF_REG_RXAP1   0x0B
 #define RF_REG_RXAP2   0x0C
